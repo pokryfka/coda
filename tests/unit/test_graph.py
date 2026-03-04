@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.agent.coding.graph import _should_fix_or_finish, _should_push, build_graph
+from src.agent.coding.graph import _should_fix_or_finish, _should_push, _should_test_or_cleanup, build_graph
 from src.agent.coding.state import AgentState
 from src.config.settings import AgentConfig, AppConfig
 
@@ -47,6 +47,23 @@ class TestRouting:
         state: AgentState = {"config": config}  # type: ignore[typeddict-item]
         assert _should_push(state) == "end_done"
 
+    def test_should_test_when_changes_made(self) -> None:
+        """Route to test when implementation has changes."""
+        state: AgentState = {  # type: ignore[typeddict-item]
+            "implementation": [{"path": "foo.py", "content": "x", "action": "write"}],
+        }
+        assert _should_test_or_cleanup(state) == "test"
+
+    def test_should_cleanup_when_no_changes(self) -> None:
+        """Route to cleanup when implementation is empty."""
+        state: AgentState = {"implementation": []}  # type: ignore[typeddict-item]
+        assert _should_test_or_cleanup(state) == "cleanup"
+
+    def test_should_cleanup_when_implementation_missing(self) -> None:
+        """Route to cleanup when implementation key is absent."""
+        state: AgentState = {}  # type: ignore[typeddict-item]
+        assert _should_test_or_cleanup(state) == "cleanup"
+
 
 class TestGraphConstruction:
     """Tests for graph building."""
@@ -60,6 +77,6 @@ class TestGraphConstruction:
         """Graph contains all expected node names."""
         graph = build_graph()
         node_names = set(graph.nodes.keys())
-        expected = {"clone", "branch", "check_pr", "plan", "implement", "test", "fix", "push", "create_pr"}
+        expected = {"clone", "branch", "check_pr", "plan", "implement", "test", "fix", "push", "create_pr", "cleanup"}
         # LangGraph adds __start__ and __end__ nodes
         assert expected.issubset(node_names)

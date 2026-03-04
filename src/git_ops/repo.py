@@ -168,6 +168,13 @@ class GitRepo:
         out = await self._run("git", "status", "--porcelain")
         return bool(out.strip())
 
+    async def delete_branch(self, name: str) -> None:
+        """Delete a local branch and switch back to default."""
+        current = await self.get_current_branch()
+        if current == name:
+            await self._run("git", "checkout", "main")
+        await self._run("git", "branch", "-D", name)
+
     async def configure_user(self, author: str) -> None:
         """Set git user name and email from author string."""
         # Parse "Name <email>" format

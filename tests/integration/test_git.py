@@ -69,3 +69,29 @@ class TestGitIntegration:
         commits = await git_repo.get_commits("feature/commits")
         assert len(commits) >= 1
         assert any("first change" in c for c in commits)
+
+    async def test_delete_branch_switches_to_main(self, git_repo: GitRepo) -> None:
+        """Deleting the current branch switches back to main."""
+        await git_repo.checkout_branch("feature/to-delete", create=True)
+        assert await git_repo.get_current_branch() == "feature/to-delete"
+
+        await git_repo.delete_branch("feature/to-delete")
+
+        assert await git_repo.get_current_branch() == "main"
+        # Branch should no longer exist
+        branches = await git_repo._run("git", "branch", "--list")
+        assert "feature/to-delete" not in branches
+
+    async def test_delete_branch_from_other_branch(self, git_repo: GitRepo) -> None:
+        """Deleting a branch while on a different branch works."""
+        await git_repo.checkout_branch("feature/keep", create=True)
+        await git_repo.checkout_branch("main")
+        await git_repo.checkout_branch("feature/remove", create=True)
+        await git_repo.checkout_branch("feature/keep")
+
+        await git_repo.delete_branch("feature/remove")
+
+        assert await git_repo.get_current_branch() == "feature/keep"
+        branches = await git_repo._run("git", "branch", "--list")
+        assert "feature/remove" not in branches
+        assert "feature/keep" in branches

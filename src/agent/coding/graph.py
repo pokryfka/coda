@@ -8,6 +8,7 @@ from langgraph.graph import END, StateGraph
 
 from src.agent.coding.nodes import (
     check_pr,
+    cleanup_branch,
     clone_repo,
     create_pr,
     fix_code,
@@ -40,6 +41,14 @@ def _should_fix_or_finish(state: AgentState) -> str:
     return "fix"
 
 
+def _should_test_or_cleanup(state: AgentState) -> str:
+    """Route after implement: test if changes were made, cleanup if not."""
+    implementation = state.get("implementation", [])
+    if not implementation:
+        return "cleanup"
+    return "test"
+
+
 def _should_push(state: AgentState) -> str:
     """Route after push: create PR if configured, else done."""
     config = state.get("config")
@@ -69,6 +78,7 @@ def build_graph(config: AppConfig | None = None) -> StateGraph:
     builder.add_node("fix", fix_code)
     builder.add_node("push", push_changes)
     builder.add_node("create_pr", create_pr)
+    builder.add_node("cleanup", cleanup_branch)
 
     # Wire edges
     builder.set_entry_point("clone")
@@ -76,7 +86,15 @@ def build_graph(config: AppConfig | None = None) -> StateGraph:
     builder.add_edge("branch", "check_pr")
     builder.add_edge("check_pr", "plan")
     builder.add_edge("plan", "implement")
-    builder.add_edge("implement", "test")
+
+    # Conditional: after implement — skip test if no changes
+    builder.add_conditional_edges(
+        "implement",
+        _should_test_or_cleanup,
+        {"test": "test", "cleanup": "cleanup"},
+    )
+
+    builder.add_edge("cleanup", END)
 
     # Conditional: after test
     builder.add_conditional_edges(

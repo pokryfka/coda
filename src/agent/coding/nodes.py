@@ -280,6 +280,18 @@ async def fix_code(state: AgentState) -> dict:
     return {"fix_attempts": fix_attempts, "status": Status.FIXING}
 
 
+async def cleanup_branch(state: AgentState) -> dict:
+    """Delete the working branch when no changes were made."""
+    repo_path = state["repo_path"]
+    branch = state["branch"]
+
+    git = GitRepo(path=Path(repo_path))
+    await git.delete_branch(branch)
+
+    logger.info("No changes made, deleted branch %s", branch)
+    return {"status": Status.DONE}
+
+
 async def push_changes(state: AgentState) -> dict:
     """Push the branch to remote."""
     repo_path = state["repo_path"]
