@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from src.agent.coding.graph import _should_fix_or_finish, _should_push, _should_test_or_cleanup, build_graph
+from src.agent.coding.graph import (
+    _is_docs_only,
+    _should_fix_or_finish,
+    _should_push,
+    _should_test_or_cleanup,
+    build_graph,
+)
 from src.agent.coding.state import AgentState
 from src.config.settings import AgentConfig, AppConfig
 
@@ -47,10 +53,30 @@ class TestRouting:
         state: AgentState = {"config": config}  # type: ignore[typeddict-item]
         assert _should_push(state) == "end_done"
 
-    def test_should_test_when_changes_made(self) -> None:
-        """Route to test when implementation has changes."""
+    def test_should_test_when_code_changes_made(self) -> None:
+        """Route to test when implementation has code changes."""
         state: AgentState = {  # type: ignore[typeddict-item]
             "implementation": [{"path": "foo.py", "content": "x", "action": "write"}],
+        }
+        assert _should_test_or_cleanup(state) == "test"
+
+    def test_should_push_when_docs_only(self) -> None:
+        """Route to push when only documentation files were changed."""
+        state: AgentState = {  # type: ignore[typeddict-item]
+            "implementation": [
+                {"path": "README.md", "content": "# Hello", "action": "write"},
+                {"path": "docs/guide.rst", "content": "Guide", "action": "write"},
+            ],
+        }
+        assert _should_test_or_cleanup(state) == "push"
+
+    def test_should_test_when_mixed_changes(self) -> None:
+        """Route to test when both code and doc files were changed."""
+        state: AgentState = {  # type: ignore[typeddict-item]
+            "implementation": [
+                {"path": "README.md", "content": "# Hello", "action": "write"},
+                {"path": "src/main.py", "content": "print(1)", "action": "write"},
+            ],
         }
         assert _should_test_or_cleanup(state) == "test"
 
@@ -63,6 +89,35 @@ class TestRouting:
         """Route to cleanup when implementation key is absent."""
         state: AgentState = {}  # type: ignore[typeddict-item]
         assert _should_test_or_cleanup(state) == "cleanup"
+
+
+class TestIsDocsOnly:
+    """Tests for _is_docs_only helper."""
+
+    def test_all_markdown_files(self) -> None:
+        """All .md files are docs-only."""
+        changes = [{"path": "README.md"}, {"path": "docs/arch.md"}]
+        assert _is_docs_only(changes) is True
+
+    def test_config_files_are_docs(self) -> None:
+        """Config files (.yaml, .toml, .json) are treated as docs."""
+        changes = [{"path": "config.yaml"}, {"path": "pyproject.toml"}, {"path": "data.json"}]
+        assert _is_docs_only(changes) is True
+
+    def test_python_file_is_not_docs(self) -> None:
+        """A .py file is not docs-only."""
+        changes = [{"path": "src/main.py"}]
+        assert _is_docs_only(changes) is False
+
+    def test_mixed_docs_and_code(self) -> None:
+        """Mix of docs and code is not docs-only."""
+        changes = [{"path": "README.md"}, {"path": "app.py"}]
+        assert _is_docs_only(changes) is False
+
+    def test_no_extension_is_not_docs(self) -> None:
+        """Files without extensions are not docs."""
+        changes = [{"path": "Makefile"}]
+        assert _is_docs_only(changes) is False
 
 
 class TestGraphConstruction:

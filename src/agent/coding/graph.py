@@ -41,11 +41,26 @@ def _should_fix_or_finish(state: AgentState) -> str:
     return "fix"
 
 
+_DOC_EXTENSIONS = frozenset({".md", ".txt", ".rst", ".adoc", ".yaml", ".yml", ".toml", ".json", ".cfg", ".ini", ".csv"})
+
+
+def _is_docs_only(changes: list[dict]) -> bool:
+    """Return True if all changed files are documentation or config files."""
+    for change in changes:
+        path = change.get("path", "")
+        suffix = path[path.rfind("."):].lower() if "." in path else ""
+        if suffix not in _DOC_EXTENSIONS:
+            return False
+    return True
+
+
 def _should_test_or_cleanup(state: AgentState) -> str:
-    """Route after implement: test if changes were made, cleanup if not."""
+    """Route after implement: test if code changed, push if docs-only, cleanup if nothing."""
     implementation = state.get("implementation", [])
     if not implementation:
         return "cleanup"
+    if _is_docs_only(implementation):
+        return "push"
     return "test"
 
 
@@ -87,11 +102,11 @@ def build_graph(config: AppConfig | None = None) -> StateGraph:
     builder.add_edge("check_pr", "plan")
     builder.add_edge("plan", "implement")
 
-    # Conditional: after implement — skip test if no changes
+    # Conditional: after implement — test code, push docs-only, cleanup if nothing
     builder.add_conditional_edges(
         "implement",
         _should_test_or_cleanup,
-        {"test": "test", "cleanup": "cleanup"},
+        {"test": "test", "push": "push", "cleanup": "cleanup"},
     )
 
     builder.add_edge("cleanup", END)
