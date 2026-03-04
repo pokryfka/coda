@@ -328,6 +328,10 @@ async def push_changes(state: AgentState) -> dict:
 async def create_pr(state: AgentState) -> dict:
     """Create a pull request via gh CLI."""
     config = state["config"]
+    if not config.agent.auto_create_pr:
+        logger.info("Skipping PR creation (auto_create_pr disabled)")
+        return {"status": Status.DONE}
+
     repo_path = state["repo_path"]
     repo_config = state["repo_config"]
 
