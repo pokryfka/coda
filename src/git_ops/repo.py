@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import os
 import re
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -72,12 +74,35 @@ class GitRepo:
         await self._run("git", "clone", auth_url, str(dest), cwd=dest.parent)
         self.path = dest
 
-    async def checkout_branch(self, name: str, create: bool = False) -> None:
-        """Check out a branch, optionally creating it."""
-        if create:
-            await self._run("git", "checkout", "-b", name)
-        else:
+    async def checkout_branch(self, name: str, create: bool = False) -> str:
+        """Check out a branch, optionally creating it.
+
+        Returns the actual branch name (may differ from *name* if a suffix was
+        added to avoid a conflict).
+        """
+        if not create:
             await self._run("git", "checkout", name)
+            return name
+
+        last_err: RuntimeError | None = None
+        candidate = name
+        for attempt in range(3):
+            try:
+                await self._run("git", "checkout", "-b", candidate)
+                return candidate
+            except RuntimeError as exc:
+                if "already exists" not in str(exc):
+                    raise
+                last_err = exc
+                suffix = hashlib.sha1(
+                    f"{name}-{time.monotonic()}-{attempt}".encode()
+                ).hexdigest()[:8]
+                candidate = f"{name}-{suffix}"
+                logger.warning(
+                    "Branch %s already exists, retrying as %s", name, candidate
+                )
+
+        raise last_err  # type: ignore[misc]
 
     async def get_commits(self, branch: str) -> list[str]:
         """Get commit descriptions from a branch relative to default branch."""
@@ -174,6 +199,20 @@ class GitRepo:
         if current == name:
             await self._run("git", "checkout", "main")
         await self._run("git", "branch", "-D", name)
+
+    async def branch_exists(self, name: str) -> bool:
+        """Check if a local branch exists."""
+        try:
+            await self._run("git", "rev-parse", "--verify", f"refs/heads/{name}")
+            return True
+        except RuntimeError:
+            return False
+
+    async def reset(self, default_branch: str = "main") -> None:
+        """Reset the repo to a clean state on the default branch."""
+        await self._run("git", "checkout", default_branch)
+        await self._run("git", "reset", "--hard", "HEAD")
+        await self._run("git", "clean", "-fd")
 
     async def configure_user(self, author: str) -> None:
         """Set git user name and email from author string."""

@@ -66,8 +66,9 @@ async def clone_repo(state: AgentState) -> dict:
 
     # Clone
     if dest.exists():
-        logger.info("Repository already exists at %s, pulling latest", dest)
+        logger.info("Repository already exists at %s, resetting to %s", dest, repo_config.default_branch)
         git.path = dest
+        await git.reset(repo_config.default_branch)
         await git._run("git", "fetch", "--all")
     else:
         await git.clone(repo_config.url, dest)
@@ -102,19 +103,16 @@ async def setup_branch(state: AgentState) -> dict:
         git.setup_auth(token)
 
     if branch:
-        # Try to check out existing branch, create if not found
-        try:
-            await git.checkout_branch(branch)
-        except RuntimeError:
-            await git.checkout_branch(branch, create=True)
+        # Explicit branch: check out only, never create
+        await git.checkout_branch(branch)
         commits = await git.get_commits(branch)
     else:
-        # Generate branch name from task
+        # Generate branch name from task, reuse existing or create
         safe_task = state["task"][:40].lower().replace(" ", "-")
         safe_task = "".join(c for c in safe_task if c.isalnum() or c == "-")
         branch = f"{config.git.branch_prefix}{safe_task}"
-        await git.checkout_branch(branch, create=True)
-        commits = []
+        branch = await git.checkout_branch(branch, create=True)
+        commits = await git.get_commits(branch)
 
     return {"branch": branch, "commits": commits}
 
