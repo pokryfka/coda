@@ -16,7 +16,7 @@ async def git_repo(tmp_path: Path) -> GitRepo:
     repo_path.mkdir()
 
     git = GitRepo(path=repo_path)
-    await git._run("git", "init")
+    await git._run("git", "init", "-b", "main")
     await git._run("git", "config", "user.name", "Test")
     await git._run("git", "config", "user.email", "test@test.com")
     (repo_path / "README.md").write_text("# Test Repo")
