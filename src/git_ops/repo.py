@@ -109,16 +109,16 @@ class GitRepo:
 
     async def create_pr(self, title: str, body: str, base: str = "main") -> dict:
         """Create a pull request via gh CLI."""
-        out = await self._run(
+        url = await self._run(
             "gh", "pr", "create",
             "--title", title,
             "--body", body,
             "--base", base,
-            "--json", "number,url",
         )
-        import json
-
-        return json.loads(out)
+        # gh pr create prints the PR URL to stdout, e.g. https://github.com/owner/repo/pull/123
+        match = re.search(r"/pull/(\d+)", url)
+        number = int(match.group(1)) if match else 0
+        return {"number": number, "url": url.strip()}
 
     async def get_open_pr(self, branch: str) -> dict | None:
         """Check for an open PR on the given branch."""
