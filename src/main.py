@@ -7,6 +7,8 @@ import asyncio
 import logging
 import sys
 
+from dotenv import load_dotenv
+
 from src.agent.coding.loop import run_agent
 from src.agent.coding.state import Status
 from src.config.settings import load_config
@@ -26,6 +28,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     """Run the coding agent from command line arguments."""
+    load_dotenv()
+
     args = parse_args(argv)
 
     logging.basicConfig(

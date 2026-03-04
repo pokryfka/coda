@@ -3,12 +3,39 @@
 from __future__ import annotations
 
 import logging
+import subprocess
+from pathlib import Path
 
 from src.agent.coding.graph import build_graph
 from src.agent.coding.state import AgentState, Status
-from src.config.settings import AppConfig, find_repo
+from src.config.settings import AppConfig, RepoConfig, find_repo
 
 logger = logging.getLogger(__name__)
+
+
+def _local_repo_config(config: AppConfig) -> RepoConfig:
+    """Build a RepoConfig for the current working directory."""
+    cwd = Path.cwd()
+    name = cwd.name or "local"
+
+    # Detect default branch from git
+    default_branch = config.git.default_branch
+    try:
+        result = subprocess.run(
+            ["git", "symbolic-ref", "refs/remotes/origin/HEAD"],
+            capture_output=True, text=True, cwd=cwd,
+        )
+        if result.returncode == 0:
+            # e.g. "refs/remotes/origin/main" -> "main"
+            default_branch = result.stdout.strip().rsplit("/", 1)[-1]
+    except OSError:
+        pass
+
+    return RepoConfig(
+        name=name,
+        url=".",
+        default_branch=default_branch,
+    )
 
 
 async def run_agent(
@@ -31,10 +58,15 @@ async def run_agent(
     Raises:
         ValueError: If the repository is not found in config.
     """
-    repo_config = find_repo(config, repo_name)
-    if repo_config is None:
-        msg = f"Repository '{repo_name}' not found in configuration"
-        raise ValueError(msg)
+    if repo_name == ".":
+        repo_config = _local_repo_config(config)
+        config.agent.auto_push = False
+        config.agent.auto_create_pr = False
+    else:
+        repo_config = find_repo(config, repo_name)
+        if repo_config is None:
+            msg = f"Repository '{repo_name}' not found in configuration"
+            raise ValueError(msg)
 
     graph = build_graph(config)
 

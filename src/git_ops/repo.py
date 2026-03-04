@@ -134,10 +134,10 @@ class GitRepo:
 
         raise last_err  # type: ignore[misc]
 
-    async def get_commits(self, branch: str) -> list[str]:
-        """Get commit descriptions from a branch relative to default branch."""
+    async def get_commits(self, branch: str, base: str = "main") -> list[str]:
+        """Get commit descriptions from a branch relative to base branch."""
         try:
-            out = await self._run("git", "log", "--oneline", f"main..{branch}")
+            out = await self._run("git", "log", "--oneline", f"{base}..{branch}")
             return [line for line in out.splitlines() if line.strip()]
         except RuntimeError:
             return []

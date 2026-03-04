@@ -51,6 +51,12 @@ async def clone_repo(state: AgentState) -> dict:
     config = state["config"]
     repo_config = state["repo_config"]
 
+    # Local mode: use the current working directory as-is
+    if repo_config.url == ".":
+        cwd = str(Path.cwd())
+        logger.info("Local mode: using current directory %s", cwd)
+        return {"repo_path": cwd}
+
     workspace = Path(config.agent.workspace_dir)
     workspace.mkdir(parents=True, exist_ok=True)
     dest = workspace / repo_config.name
@@ -102,8 +108,10 @@ async def clone_repo(state: AgentState) -> dict:
 async def setup_branch(state: AgentState) -> dict:
     """Create or check out the working branch and gather commits."""
     config = state["config"]
+    repo_config = state["repo_config"]
     repo_path = state["repo_path"]
     branch = state.get("branch", "")
+    base = repo_config.default_branch
 
     git = GitRepo(path=Path(repo_path))
     token = os.environ.get("GH_TOKEN", "")
@@ -113,14 +121,14 @@ async def setup_branch(state: AgentState) -> dict:
     if branch:
         # Explicit branch: check out only, never create
         await git.checkout_branch(branch)
-        commits = await git.get_commits(branch)
+        commits = await git.get_commits(branch, base=base)
     else:
         # Generate branch name from task, reuse existing or create
         safe_task = state["task"][:40].lower().replace(" ", "-")
         safe_task = "".join(c for c in safe_task if c.isalnum() or c == "-")
         branch = f"{config.git.branch_prefix}{safe_task}"
         branch = await git.checkout_branch(branch, create=True)
-        commits = await git.get_commits(branch)
+        commits = await git.get_commits(branch, base=base)
 
     return {"branch": branch, "commits": commits}
 
@@ -300,6 +308,11 @@ async def cleanup_branch(state: AgentState) -> dict:
 
 async def push_changes(state: AgentState) -> dict:
     """Push the branch to remote."""
+    config = state["config"]
+    if not config.agent.auto_push:
+        logger.info("Skipping push (auto_push disabled)")
+        return {"status": Status.DONE}
+
     repo_path = state["repo_path"]
     branch = state["branch"]
 
