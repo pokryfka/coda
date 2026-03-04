@@ -97,7 +97,11 @@ def build_graph(config: AppConfig | None = None) -> StateGraph:
 
     # Wire edges
     builder.set_entry_point("clone")
-    builder.add_edge("clone", "branch")
+    builder.add_conditional_edges(
+        "clone",
+        lambda s: "end" if s.get("error") else "branch",
+        {"branch": "branch", "end": END},
+    )
     builder.add_edge("branch", "check_pr")
     builder.add_edge("check_pr", "plan")
     builder.add_edge("plan", "implement")

@@ -64,6 +64,14 @@ async def clone_repo(state: AgentState) -> dict:
     if token:
         git.setup_auth(token)
 
+    # Verify token scopes
+    if token:
+        missing = await git.check_auth(token)
+        if missing:
+            error_msg = f"GitHub token is missing required scopes: {', '.join(missing)}"
+            logger.error(error_msg)
+            return {"error": error_msg, "status": Status.FAILED}
+
     # Clone
     if dest.exists():
         logger.info("Repository already exists at %s, resetting to %s", dest, repo_config.default_branch)

@@ -62,6 +62,22 @@ async def pr_branch(cloned_repo: GitRepo) -> str:
         pass
 
 
+class TestGitHubAuth:
+    """Tests for GitHub token authentication checks."""
+
+    async def test_check_auth_valid_token(self, cloned_repo: GitRepo) -> None:
+        """check_auth returns no missing scopes for a properly scoped token."""
+        missing = await cloned_repo.check_auth(GH_TOKEN)
+        assert isinstance(missing, list)
+        # If the test token is properly configured, all scopes should be present
+        assert missing == [], f"Token is missing required scopes: {missing}"
+
+    async def test_check_auth_invalid_token(self, cloned_repo: GitRepo) -> None:
+        """check_auth raises RuntimeError for an invalid token."""
+        with pytest.raises(RuntimeError, match="Failed to verify token"):
+            await cloned_repo.check_auth("ghp_invalid_token_000000000000000000")
+
+
 class TestGitHubClone:
     """Tests for cloning from GitHub."""
 

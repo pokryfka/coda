@@ -62,6 +62,36 @@ class GitRepo:
         """Configure authentication token for git operations."""
         self.token = token
 
+    async def check_auth(self, token: str) -> list[str]:
+        """Check if a GitHub token has the required scopes.
+
+        Returns a list of missing scopes.  An empty list means the token
+        has every required permission.
+        """
+        required = {"repo", "workflow", "read:org", "read:discussion"}
+        env = os.environ.copy()
+        env["GH_TOKEN"] = token
+
+        proc = await asyncio.create_subprocess_exec(
+            "gh", "api", "-i", "user",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env=env,
+        )
+        stdout, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            msg = f"Failed to verify token: {stderr.decode().strip()}"
+            raise RuntimeError(msg)
+
+        granted: set[str] = set()
+        for line in stdout.decode().splitlines():
+            if line.lower().startswith("x-oauth-scopes:"):
+                scopes = line.split(":", 1)[1]
+                granted = {s.strip() for s in scopes.split(",") if s.strip()}
+                break
+
+        return sorted(required - granted)
+
     def _auth_url(self, url: str) -> str:
         """Inject token into HTTPS URL for authenticated clone."""
         if self.token and url.startswith("https://"):
