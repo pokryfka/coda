@@ -3,7 +3,7 @@
 
 # LLM Provider Configuration
 llm:
-  # Provider: "ollama", "claude", "codex", "gemini", "codex"
+  # Provider: "ollama", "claude", "codex", "gemini"
   provider: "claude"
   readme: "AGENTS.md"  # Default readme for agent context
 
