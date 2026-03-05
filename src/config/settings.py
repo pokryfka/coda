@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 
 import yaml
@@ -21,11 +22,20 @@ class LlmProviderConfig:
     fix_model: str = ""
 
 
+class LlmProvider(StrEnum):
+    """Supported LLM providers."""
+
+    CLAUDE = "claude"
+    GEMINI = "gemini"
+    CODEX = "codex"
+    OLLAMA = "ollama"
+
+
 @dataclass
 class LlmConfig:
     """Top-level LLM configuration."""
 
-    provider: str = "claude"
+    provider: LlmProvider = LlmProvider.CLAUDE
     readme: str = "AGENTS.md"
     ollama: LlmProviderConfig = field(default_factory=lambda: LlmProviderConfig(model="qwen2.5-coder:14b"))
     claude: LlmProviderConfig = field(
@@ -98,7 +108,7 @@ def _build_provider_config(data: dict) -> LlmProviderConfig:
 def _build_llm_config(data: dict) -> LlmConfig:
     """Build LLM config from a dictionary."""
     config = LlmConfig(
-        provider=data.get("provider", "claude"),
+        provider=LlmProvider(data.get("provider", "claude")),
         readme=data.get("readme", "AGENTS.md"),
     )
     for provider_name in ("ollama", "claude", "gemini", "codex"):
@@ -165,7 +175,7 @@ def _apply_env_overrides(config: AppConfig) -> AppConfig:
     """Apply environment variable overrides to config."""
     provider = os.environ.get("LLM_PROVIDER")
     if provider:
-        config.llm.provider = provider
+        config.llm.provider = LlmProvider(provider)
 
     ollama_url = os.environ.get("OLLAMA_BASE_URL")
     if ollama_url:

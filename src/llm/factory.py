@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable
 
+from src.config.settings import LlmProvider
+
 if TYPE_CHECKING:
     from src.config.settings import AppConfig
 
@@ -39,13 +41,13 @@ def create_llm(config: AppConfig, task: str | None = None) -> Runnable:
 
     model = _resolve_model(provider_config.model, provider_config, task)
 
-    if provider == "claude":
+    if provider == LlmProvider.CLAUDE:
         llm = _create_claude(model)
-    elif provider == "gemini":
+    elif provider == LlmProvider.GEMINI:
         llm = _create_gemini(model)
-    elif provider == "codex":
+    elif provider == LlmProvider.CODEX:
         llm = _create_codex(model)
-    elif provider == "ollama":
+    elif provider == LlmProvider.OLLAMA:
         llm = _create_ollama(model, provider_config.base_url)
     else:
         msg = f"Unsupported LLM provider: {provider}"
