@@ -22,6 +22,18 @@ class TestValidatePath:
         with pytest.raises(ValueError, match="outside workspace"):
             _validate_path("../../etc/passwd", str(tmp_path))
 
+    def test_rejects_absolute_path_outside_workspace(self, tmp_path: Path) -> None:
+        """Absolute paths outside workspace are rejected."""
+        outside = tmp_path.parent / "outside.txt"
+        with pytest.raises(ValueError, match="outside workspace"):
+            _validate_path(str(outside), str(tmp_path))
+
+    def test_rejects_sibling_prefix_escape(self, tmp_path: Path) -> None:
+        """Sibling paths sharing prefix with workspace are rejected."""
+        sibling = tmp_path.parent / f"{tmp_path.name}-evil" / "pwned.txt"
+        with pytest.raises(ValueError, match="outside workspace"):
+            _validate_path(str(sibling), str(tmp_path))
+
 
 class TestReadFile:
     """Tests for read_file tool."""
