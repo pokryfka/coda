@@ -1,0 +1,29 @@
+services:
+  agent:
+    build: .
+    volumes:
+      - ./data:/workspace
+      - ./config.yaml:/app/config.yaml:ro
+    env_file:
+      - .env
+    environment:
+      - GH_TOKEN
+      - ANTHROPIC_API_KEY
+      - GEMINI_API_KEY
+      - OPENAI_API_KEY
+      - LLM_PROVIDER
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - LANGSMITH_TRACING
+      - LANGSMITH_API_KEY
+      - LANGSMITH_PROJECT
+      - LANGSMITH_ENDPOINT
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    profiles:
+      - ollama
+
+volumes:
+  ollama_data:

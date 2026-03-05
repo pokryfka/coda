@@ -1,0 +1,81 @@
+# Coding Agent Configuration
+# ===========================
+
+# LLM Provider Configuration
+llm:
+  # Provider: "ollama", "claude", "codex", "gemini"
+  provider: "claude"
+  readme: "AGENTS.md"  # Default readme for agent context
+
+  ollama:
+    base_url: "http://ollama:11434"
+    model: "qwen2.5-coder:14b"
+
+  claude:
+    # Set ANTHROPIC_API_KEY env var or pass via docker
+    model: "claude-sonnet-4-6"
+    readme: "CLAUDE.md"
+    # Optional per-task model overrides (fall back to `model` if not set)
+    # plan_model: "claude-opus-4-6"
+    # implement_model: "claude-sonnet-4-6"
+    # fix_model: "claude-sonnet-4-6"
+
+  gemini:
+    # Set GEMINI_API_KEY env var
+    model: "gemini-3-flash-preview"
+    readme: "GEMINI.md"
+    # Optional per-task model overrides (fall back to `model` if not set)
+    # plan_model: "gemini-3.1-pro-preview"
+    # implement_model: "gemini-3-flash-preview"
+    # fix_model: "gemini-3-flash-preview"
+
+  codex:
+    # Set OPENAI_API_KEY env var
+    model: "gpt-4o"
+
+# Git / GitHub Configuration
+git:
+  # GitHub personal access token (fine-grained recommended)
+  # Set GH_TOKEN env var instead of hardcoding here
+  default_branch: "main"
+  branch_prefix: "agent/"
+  commit_author: "Coding Agent <coding-agent@automated.dev>"
+
+# Repositories the agent can work on
+repositories:
+  # Public repo — uses GH_TOKEN for push/PR (default)
+  - name: "my-backend"
+    url: "https://github.com/yourorg/my-backend.git"
+    default_branch: "main"
+    language: "python"
+    test_command: "pytest"
+    lint_command: "ruff check ."
+    setup_command: "uv sync --frozen"
+
+  - name: "my-frontend"
+    url: "https://github.com/yourorg/my-frontend.git"
+    default_branch: "main"
+    language: "typescript"
+    test_command: "npm test"
+    lint_command: "npm run lint"
+    setup_command: "npm ci"
+
+  # Private repo — HTTPS with per-repo token
+  # The token_env value is the name of an env var containing the PAT for this repo.
+  # Falls back to GH_TOKEN if the env var is empty.
+  - name: "my-private-service"
+    url: "https://github.com/yourorg/my-private-service.git"
+    default_branch: "main"
+    language: "python"
+    test_command: "pytest"
+    private: true
+    auth_method: "token"
+    token_env: "MY_PRIVATE_REPO_TOKEN"
+
+# Agent Behavior
+agent:
+  max_fix_attempts: 5
+  request_review_from: []  # GitHub usernames, e.g. ["alice", "bob"]
+  auto_push: true
+  auto_create_pr: true
+  workspace_dir: "/workspace"
