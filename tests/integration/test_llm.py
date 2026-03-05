@@ -7,7 +7,7 @@ import os
 import pytest
 from langchain_core.runnables import RunnableBinding
 
-from src.config.settings import AppConfig, LlmConfig, LlmMode, LlmProvider, LlmProviderConfig
+from src.config.settings import AppConfig, LlmConfig, LlmMode, LlmModeConfig, LlmProvider, LlmProviderConfig
 from src.llm.factory import create_llm
 
 
@@ -43,7 +43,12 @@ class TestLlmFactory:
         config = AppConfig(
             llm=LlmConfig(
                 provider="ollama",
-                providers={LlmProvider.OLLAMA: LlmProviderConfig(model="qwen2.5-coder:14b", base_url="http://localhost:11434")},
+                providers={
+                    LlmProvider.OLLAMA: LlmProviderConfig(
+                        model="qwen2.5-coder:14b",
+                        options={"base_url": "http://localhost:11434"},
+                    ),
+                },
             )
         )
         llm = create_llm(config)
@@ -60,13 +65,31 @@ class TestLlmFactory:
         config = AppConfig(
             llm=LlmConfig(
                 provider="ollama",
-                providers={LlmProvider.OLLAMA: LlmProviderConfig(
-                    model="default-model",
-                    base_url="http://localhost:11434",
-                    model_overrides={LlmMode.PLAN: "plan-model"},
-                )},
+                providers={
+                    LlmProvider.OLLAMA: LlmProviderConfig(
+                        model="default-model",
+                        options={"base_url": "http://localhost:11434"},
+                        modes={LlmMode.PLAN: LlmModeConfig(model="plan-model")},
+                    ),
+                },
             )
         )
         llm = create_llm(config, task=LlmMode.PLAN)
-        # The model should be the override
         assert llm.bound.model == "plan-model"
+
+    def test_mode_options_override(self) -> None:
+        """Factory merges mode-level options over provider-level options."""
+        config = AppConfig(
+            llm=LlmConfig(
+                provider="ollama",
+                providers={
+                    LlmProvider.OLLAMA: LlmProviderConfig(
+                        model="test-model",
+                        options={"base_url": "http://localhost:11434", "temperature": 0},
+                        modes={LlmMode.PLAN: LlmModeConfig(options={"temperature": 0.5})},
+                    ),
+                },
+            )
+        )
+        llm = create_llm(config, task=LlmMode.PLAN)
+        assert llm.bound.temperature == 0.5

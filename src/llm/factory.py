@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable
@@ -40,15 +40,16 @@ def create_llm(config: AppConfig, task: LlmMode | None = None) -> Runnable:
         raise ValueError(msg)
 
     model = _resolve_model(provider_config.model, provider_config, task)
+    kwargs = _merge_options(provider_config, task)
 
     if provider == LlmProvider.CLAUDE:
-        llm = _create_claude(model)
+        llm = _create_claude(model, **kwargs)
     elif provider == LlmProvider.GEMINI:
-        llm = _create_gemini(model)
+        llm = _create_gemini(model, **kwargs)
     elif provider == LlmProvider.CODEX:
-        llm = _create_codex(model)
+        llm = _create_codex(model, **kwargs)
     elif provider == LlmProvider.OLLAMA:
-        llm = _create_ollama(model, provider_config.base_url)
+        llm = _create_ollama(model, **kwargs)
     else:
         msg = f"Unsupported LLM provider: {provider}"
         raise ValueError(msg)
@@ -59,38 +60,45 @@ def create_llm(config: AppConfig, task: LlmMode | None = None) -> Runnable:
 def _resolve_model(default_model: str, provider_config: LlmProviderConfig, task: LlmMode | None) -> str:
     """Resolve the model name, applying task-specific overrides if set."""
     if task:
-        override = provider_config.model_overrides.get(task, "")
-        if override:
-            return override
+        mode_config = provider_config.modes.get(task)
+        if mode_config and mode_config.model:
+            return mode_config.model
     return default_model
 
 
-def _create_claude(model: str) -> BaseChatModel:
+def _merge_options(provider_config: LlmProviderConfig, task: LlmMode | None) -> dict[str, Any]:
+    """Merge provider-level options with mode-level overrides."""
+    merged = dict(provider_config.options)
+    if task:
+        mode_config = provider_config.modes.get(task)
+        if mode_config:
+            merged.update(mode_config.options)
+    return merged
+
+
+def _create_claude(model: str, **kwargs: Any) -> BaseChatModel:
     """Create a Claude (Anthropic) chat model."""
     from langchain_anthropic import ChatAnthropic
 
-    return ChatAnthropic(model=model, temperature=0)
+    return ChatAnthropic(model=model, **kwargs)
 
 
-def _create_gemini(model: str) -> BaseChatModel:
+def _create_gemini(model: str, **kwargs: Any) -> BaseChatModel:
     """Create a Gemini (Google) chat model."""
     from langchain_google_genai import ChatGoogleGenerativeAI
 
-    return ChatGoogleGenerativeAI(model=model, temperature=0)
+    return ChatGoogleGenerativeAI(model=model, **kwargs)
 
 
-def _create_codex(model: str) -> BaseChatModel:
+def _create_codex(model: str, **kwargs: Any) -> BaseChatModel:
     """Create an OpenAI chat model."""
     from langchain_openai import ChatOpenAI
 
-    return ChatOpenAI(model=model, temperature=0)
+    return ChatOpenAI(model=model, **kwargs)
 
 
-def _create_ollama(model: str, base_url: str) -> BaseChatModel:
+def _create_ollama(model: str, **kwargs: Any) -> BaseChatModel:
     """Create an Ollama chat model."""
     from langchain_ollama import ChatOllama
 
-    kwargs: dict = {"model": model, "temperature": 0}
-    if base_url:
-        kwargs["base_url"] = base_url
-    return ChatOllama(**kwargs)
+    return ChatOllama(model=model, **kwargs)

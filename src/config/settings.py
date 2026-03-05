@@ -7,7 +7,17 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 
+from typing import Any
+
 import yaml
+
+
+@dataclass
+class LlmModeConfig:
+    """Per-mode model and options overrides."""
+
+    model: str = ""
+    options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -15,9 +25,9 @@ class LlmProviderConfig:
     """Configuration for a specific LLM provider."""
 
     model: str = ""
-    base_url: str = ""
     readme: str = ""
-    model_overrides: dict[LlmMode, str] = field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
+    modes: dict[LlmMode, LlmModeConfig] = field(default_factory=dict)
 
 
 class LlmMode(StrEnum):
@@ -104,16 +114,19 @@ class AppConfig:
 
 def _build_provider_config(data: dict) -> LlmProviderConfig:
     """Build a provider config from a dictionary."""
-    overrides: dict[LlmMode, str] = {}
+    modes: dict[LlmMode, LlmModeConfig] = {}
     for mode in LlmMode:
-        key = f"{mode}_model"
-        if key in data and data[key]:
-            overrides[mode] = data[key]
+        if mode in data and isinstance(data[mode], dict):
+            mode_data = data[mode]
+            modes[mode] = LlmModeConfig(
+                model=mode_data.get("model", ""),
+                options={k: v for k, v in mode_data.items() if k != "model"},
+            )
     return LlmProviderConfig(
         model=data.get("model", ""),
-        base_url=data.get("base_url", ""),
         readme=data.get("readme", ""),
-        model_overrides=overrides,
+        options=data.get("options", {}),
+        modes=modes,
     )
 
 
@@ -191,7 +204,7 @@ def _apply_env_overrides(config: AppConfig) -> AppConfig:
 
     ollama_url = os.environ.get("OLLAMA_BASE_URL")
     if ollama_url:
-        config.llm.providers[LlmProvider.OLLAMA].base_url = ollama_url
+        config.llm.providers[LlmProvider.OLLAMA].options["base_url"] = ollama_url
 
     return config
 
