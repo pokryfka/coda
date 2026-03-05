@@ -42,5 +42,5 @@ class TestLangSmithClientCreation:
         try:
             projects = list(client.list_projects(limit=1))
             assert isinstance(projects, list)
-        except Exception as exc:
-            pytest.fail(f"LangSmith API call failed: {exc}")
+        except Exception:
+            pytest.fail("LangSmith API call failed")
