@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 
 import pytest
-from langchain_core.language_models import BaseChatModel
+from langchain_core.runnables import RunnableBinding
 
 from src.config.settings import AppConfig, LlmConfig, LlmProviderConfig
 from src.llm.factory import create_llm
@@ -20,7 +20,7 @@ class TestLlmFactory:
             pytest.skip("ANTHROPIC_API_KEY not set")
         config = AppConfig(llm=LlmConfig(provider="claude"))
         llm = create_llm(config)
-        assert isinstance(llm, BaseChatModel)
+        assert isinstance(llm, RunnableBinding)
 
     def test_create_gemini_client(self) -> None:
         """Factory creates a Gemini client when configured."""
@@ -28,7 +28,7 @@ class TestLlmFactory:
             pytest.skip("GEMINI_API_KEY not set")
         config = AppConfig(llm=LlmConfig(provider="gemini"))
         llm = create_llm(config)
-        assert isinstance(llm, BaseChatModel)
+        assert isinstance(llm, RunnableBinding)
 
     def test_create_openai_client(self) -> None:
         """Factory creates an OpenAI client when configured."""
@@ -36,7 +36,7 @@ class TestLlmFactory:
             pytest.skip("OPENAI_API_KEY not set")
         config = AppConfig(llm=LlmConfig(provider="codex"))
         llm = create_llm(config)
-        assert isinstance(llm, BaseChatModel)
+        assert isinstance(llm, RunnableBinding)
 
     def test_create_ollama_client(self) -> None:
         """Factory creates an Ollama client when configured."""
@@ -47,7 +47,7 @@ class TestLlmFactory:
             )
         )
         llm = create_llm(config)
-        assert isinstance(llm, BaseChatModel)
+        assert isinstance(llm, RunnableBinding)
 
     def test_invalid_provider_raises(self) -> None:
         """Factory raises ValueError for unsupported provider."""
@@ -69,4 +69,4 @@ class TestLlmFactory:
         )
         llm = create_llm(config, task="plan")
         # The model should be the override
-        assert llm.model == "plan-model"
+        assert llm.bound.model == "plan-model"

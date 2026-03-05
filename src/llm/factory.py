@@ -5,12 +5,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.runnables import Runnable
 
 if TYPE_CHECKING:
     from src.config.settings import AppConfig
 
 
-def create_llm(config: AppConfig, task: str | None = None) -> BaseChatModel:
+def _get_tools() -> list:
+    """Import and return all coding agent tools."""
+    from src.agent.coding.tools import list_files, read_file, run_command, write_file
+
+    return [read_file, write_file, list_files, run_command]
+
+
+def create_llm(config: AppConfig, task: str | None = None) -> Runnable:
     """Create an LLM client based on provider configuration.
 
     Args:
@@ -32,16 +40,18 @@ def create_llm(config: AppConfig, task: str | None = None) -> BaseChatModel:
     model = _resolve_model(provider_config.model, provider_config, task)
 
     if provider == "claude":
-        return _create_claude(model)
-    if provider == "gemini":
-        return _create_gemini(model)
-    if provider == "codex":
-        return _create_codex(model)
-    if provider == "ollama":
-        return _create_ollama(model, provider_config.base_url)
+        llm = _create_claude(model)
+    elif provider == "gemini":
+        llm = _create_gemini(model)
+    elif provider == "codex":
+        llm = _create_codex(model)
+    elif provider == "ollama":
+        llm = _create_ollama(model, provider_config.base_url)
+    else:
+        msg = f"Unsupported LLM provider: {provider}"
+        raise ValueError(msg)
 
-    msg = f"Unsupported LLM provider: {provider}"
-    raise ValueError(msg)
+    return llm.bind_tools(_get_tools())
 
 
 def _resolve_model(default_model: str, provider_config: object, task: str | None) -> str:
