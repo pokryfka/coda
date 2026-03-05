@@ -67,7 +67,7 @@ coda/
 │     └─ test_tools.py # Unit tests for LangChain tool wrappers
 ├─ .coderabbit.yaml # CodeRabbit review/automation configuration
 ├─ .env.example # Example environment variables for API keys/tokens
-├─ .gitignore # Example environment variables for API keys/tokens
+├─ .gitignore # Git ignore rules for local/build/runtime artifacts
 ├─ AGENTS.md # Agent-facing project instructions and conventions
 ├─ config.yaml.example # Example runtime configuration file
 ├─ langgraph.json
@@ -98,8 +98,8 @@ coda/
 ## Testing instructions
 
 - Run all tests: `uv run pytest`
-- Run a single test file: `uv run pytest tests/test_executor.py`
-- Run a specific test: `uv run pytest tests/test_executor.py -k "test_name"`
+- Run a single test file: `uv run pytest tests/unit/test_tools.py`
+- Run a specific test: `uv run pytest tests/unit/test_tools.py -k "test_read_existing_file"`
 - Lint: `uv run ruff check .`
 - Always run both `uv run pytest` and `uv run ruff check .` before committing
 
