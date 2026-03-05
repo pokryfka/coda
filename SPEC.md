@@ -26,7 +26,7 @@ Implementation must produce:
 
 ## Project structure
 
-```
+```text
 coda/
 ├── .github/
 │  └─ workflows/
