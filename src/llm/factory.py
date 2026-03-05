@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable
 
-from src.config.settings import LlmProvider
+from src.config.settings import LlmMode, LlmProvider, LlmProviderConfig
 
 if TYPE_CHECKING:
     from src.config.settings import AppConfig
@@ -20,12 +20,12 @@ def _get_tools() -> list:
     return [read_file, write_file, list_files, run_command]
 
 
-def create_llm(config: AppConfig, task: str | None = None) -> Runnable:
+def create_llm(config: AppConfig, task: LlmMode | None = None) -> Runnable:
     """Create an LLM client based on provider configuration.
 
     Args:
         config: Application configuration.
-        task: Optional task name (plan, implement, fix) for model override.
+        task: Optional LLM mode for model override.
 
     Returns:
         A configured BaseChatModel instance.
@@ -34,7 +34,7 @@ def create_llm(config: AppConfig, task: str | None = None) -> Runnable:
         ValueError: If the provider is not supported.
     """
     provider = config.llm.provider
-    provider_config = getattr(config.llm, provider, None)
+    provider_config = config.llm.providers.get(provider)
     if provider_config is None:
         msg = f"Unsupported LLM provider: {provider}"
         raise ValueError(msg)
@@ -56,10 +56,10 @@ def create_llm(config: AppConfig, task: str | None = None) -> Runnable:
     return llm.bind_tools(_get_tools())
 
 
-def _resolve_model(default_model: str, provider_config: object, task: str | None) -> str:
+def _resolve_model(default_model: str, provider_config: LlmProviderConfig, task: LlmMode | None) -> str:
     """Resolve the model name, applying task-specific overrides if set."""
     if task:
-        override = getattr(provider_config, f"{task}_model", "")
+        override = provider_config.model_overrides.get(task, "")
         if override:
             return override
     return default_model

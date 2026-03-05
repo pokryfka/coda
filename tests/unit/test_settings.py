@@ -5,7 +5,7 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-from src.config.settings import AppConfig, find_repo, load_config
+from src.config.settings import AppConfig, LlmMode, LlmProvider, find_repo, load_config
 
 
 class TestLoadConfig:
@@ -40,7 +40,7 @@ class TestLoadConfig:
         """))
         config = load_config(config_file)
         assert config.llm.provider == "gemini"
-        assert config.llm.gemini.model == "gemini-pro"
+        assert config.llm.providers[LlmProvider.GEMINI].model == "gemini-pro"
         assert config.git.default_branch == "develop"
         assert config.git.branch_prefix == "bot/"
         assert len(config.repositories) == 1
@@ -61,7 +61,7 @@ class TestLoadConfig:
         config_file.write_text("llm:\n  provider: ollama\n")
         monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")  # type: ignore[attr-defined]
         config = load_config(config_file)
-        assert config.llm.ollama.base_url == "http://localhost:11434"
+        assert config.llm.providers[LlmProvider.OLLAMA].base_url == "http://localhost:11434"
 
     def test_provider_model_overrides(self, tmp_path: Path) -> None:
         """Per-task model overrides are loaded from config."""
@@ -75,9 +75,10 @@ class TestLoadConfig:
                 implement_model: claude-sonnet-4-6
         """))
         config = load_config(config_file)
-        assert config.llm.claude.plan_model == "claude-opus-4-6"
-        assert config.llm.claude.implement_model == "claude-sonnet-4-6"
-        assert config.llm.claude.fix_model == ""
+        claude = config.llm.providers[LlmProvider.CLAUDE]
+        assert claude.model_overrides[LlmMode.PLAN] == "claude-opus-4-6"
+        assert claude.model_overrides[LlmMode.IMPLEMENT] == "claude-sonnet-4-6"
+        assert LlmMode.FIX not in claude.model_overrides
 
 
 class TestFindRepo:

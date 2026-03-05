@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from src.agent.coding.loop import run_agent
-from src.config.settings import AgentConfig, AppConfig, GitConfig, LlmConfig, LlmProviderConfig, RepoConfig
+from src.config.settings import AgentConfig, AppConfig, GitConfig, LlmConfig, LlmProvider, LlmProviderConfig, RepoConfig
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def e2e_config(tmp_path: Path, temp_repo: Path) -> AppConfig:
     return AppConfig(
         llm=LlmConfig(
             provider="ollama",
-            ollama=LlmProviderConfig(model="test-model", base_url="http://localhost:11434"),
+            providers={LlmProvider.OLLAMA: LlmProviderConfig(model="test-model", base_url="http://localhost:11434")},
         ),
         git=GitConfig(commit_author="Test Bot <test@bot.com>"),
         repositories=[

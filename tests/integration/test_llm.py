@@ -7,7 +7,7 @@ import os
 import pytest
 from langchain_core.runnables import RunnableBinding
 
-from src.config.settings import AppConfig, LlmConfig, LlmProviderConfig
+from src.config.settings import AppConfig, LlmConfig, LlmMode, LlmProvider, LlmProviderConfig
 from src.llm.factory import create_llm
 
 
@@ -43,7 +43,7 @@ class TestLlmFactory:
         config = AppConfig(
             llm=LlmConfig(
                 provider="ollama",
-                ollama=LlmProviderConfig(model="qwen2.5-coder:14b", base_url="http://localhost:11434"),
+                providers={LlmProvider.OLLAMA: LlmProviderConfig(model="qwen2.5-coder:14b", base_url="http://localhost:11434")},
             )
         )
         llm = create_llm(config)
@@ -60,13 +60,13 @@ class TestLlmFactory:
         config = AppConfig(
             llm=LlmConfig(
                 provider="ollama",
-                ollama=LlmProviderConfig(
+                providers={LlmProvider.OLLAMA: LlmProviderConfig(
                     model="default-model",
                     base_url="http://localhost:11434",
-                    plan_model="plan-model",
-                ),
+                    model_overrides={LlmMode.PLAN: "plan-model"},
+                )},
             )
         )
-        llm = create_llm(config, task="plan")
+        llm = create_llm(config, task=LlmMode.PLAN)
         # The model should be the override
         assert llm.bound.model == "plan-model"

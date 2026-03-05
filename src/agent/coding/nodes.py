@@ -15,6 +15,7 @@ from src.agent.coding.prompts import (
     build_plan_prompt,
 )
 from src.agent.coding.state import AgentState, Status
+from src.config.settings import LlmMode
 from src.git_ops.repo import GitRepo
 from src.llm.factory import create_llm
 
@@ -157,8 +158,8 @@ async def plan(state: AgentState) -> dict:
     config = state["config"]
     repo_path = state["repo_path"]
 
-    llm = create_llm(config, task="plan")
-    provider_config = getattr(config.llm, config.llm.provider)
+    llm = create_llm(config, task=LlmMode.PLAN)
+    provider_config = config.llm.providers[config.llm.provider]
     readme_name = provider_config.readme or config.llm.readme
     readme = _read_readme(repo_path, readme_name)
     repo_context = _get_repo_context(repo_path)
@@ -183,7 +184,7 @@ async def implement(state: AgentState) -> dict:
     config = state["config"]
     repo_path = state["repo_path"]
 
-    llm = create_llm(config, task="implement")
+    llm = create_llm(config, task=LlmMode.IMPLEMENT)
     repo_context = _get_repo_context(repo_path)
 
     messages = build_implement_prompt(
@@ -256,7 +257,7 @@ async def fix_code(state: AgentState) -> dict:
     config = state["config"]
     repo_path = state["repo_path"]
 
-    llm = create_llm(config, task="fix")
+    llm = create_llm(config, task=LlmMode.FIX)
     test_output = state.get("test_result", {}).get("output", "")
     files_changed = [c.get("path", "") for c in state.get("implementation", [])]
 
