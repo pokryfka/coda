@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable
@@ -39,6 +42,8 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
     model = _resolve_model(provider_config.model, provider_config, task)
     kwargs = _merge_options(provider_config, task)
 
+    logger.info("Creating LLM: provider=%s, model=%s, options=%s", provider, model, kwargs)
+
     if provider == LlmProvider.CLAUDE:
         llm = _create_claude(model, **kwargs)
     elif provider == LlmProvider.GEMINI:
@@ -69,7 +74,8 @@ def _merge_options(provider_config: LlmProviderConfig, task: LlmMode | None) -> 
     if task:
         mode_config = provider_config.modes.get(task)
         if mode_config:
-            merged.update(mode_config.options)
+            overrides = mode_config.options
+            merged.update(overrides.get("options", overrides))
     return merged
 
 
