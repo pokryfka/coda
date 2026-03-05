@@ -24,6 +24,7 @@ config.yaml
 *.swp
 *.swo
 *~
+.langgraph_api/
 
 # OS
 .DS_Store
