@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable
 
-from src.config.settings import LlmMode, LlmProvider, LlmProviderConfig
-
-if TYPE_CHECKING:
-    from src.config.settings import AppConfig
+from src.config.settings import LlmConfig, LlmMode, LlmProvider, LlmProviderConfig
 
 
 def _get_tools() -> list:
@@ -20,11 +17,11 @@ def _get_tools() -> list:
     return [read_file, write_file, list_files, run_command]
 
 
-def create_llm(config: AppConfig, task: LlmMode | None = None) -> Runnable:
+def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
     """Create an LLM client based on provider configuration.
 
     Args:
-        config: Application configuration.
+        config: LLM configuration.
         task: Optional LLM mode for model override.
 
     Returns:
@@ -33,8 +30,8 @@ def create_llm(config: AppConfig, task: LlmMode | None = None) -> Runnable:
     Raises:
         ValueError: If the provider is not supported.
     """
-    provider = config.llm.provider
-    provider_config = config.llm.providers.get(provider)
+    provider = config.provider
+    provider_config = config.providers.get(provider)
     if provider_config is None:
         msg = f"Unsupported LLM provider: {provider}"
         raise ValueError(msg)
