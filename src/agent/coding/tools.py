@@ -13,7 +13,7 @@ def _validate_path(path: str, workspace: str) -> Path:
     """Validate that a path is within the workspace directory."""
     resolved = Path(workspace, path).resolve()
     workspace_resolved = Path(workspace).resolve()
-    if not str(resolved).startswith(str(workspace_resolved)):
+    if not resolved.is_relative_to(workspace_resolved):
         msg = f"Path {path} is outside workspace"
         raise ValueError(msg)
     return resolved
