@@ -105,6 +105,30 @@ class TestLoadConfig:
         assert ollama.options["temperature"] == 0.5
 
 
+    def test_mode_options_not_merged_with_provider(self, tmp_path: Path) -> None:
+        """Mode-specific options should not be merged with provider-level options."""
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(textwrap.dedent("""\
+            llm:
+              provider: claude
+              claude:
+                model: claude-sonnet-4-6
+                options:
+                  temperature: 0
+                  max_tokens: 4096
+                plan:
+                  model: claude-opus-4-6
+                  temperature: 0.2
+        """))
+        config = load_config(config_file)
+        claude = config.llm.providers[LlmProvider.CLAUDE]
+        # Provider options should have both keys
+        assert claude.options == {"temperature": 0, "max_tokens": 4096}
+        # Mode options should only have its own keys, not inherited from provider
+        assert claude.modes[LlmMode.PLAN].options == {"temperature": 0.2}
+        assert "max_tokens" not in claude.modes[LlmMode.PLAN].options
+
+
 class TestFindRepo:
     """Tests for find_repo function."""
 

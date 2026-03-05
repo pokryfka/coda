@@ -39,19 +39,18 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
         msg = f"Unsupported LLM provider: {provider}"
         raise ValueError(msg)
 
-    model = _resolve_model(provider_config.model, provider_config, task)
-    kwargs = _merge_options(provider_config, task)
+    model, options = _resolve_model(provider_config, task)
 
-    logger.info("Creating LLM: provider=%s, model=%s, options=%s", provider, model, kwargs)
+    logger.info("Creating LLM: provider=%s, model=%s, options=%s", provider, model, options)
 
     if provider == LlmProvider.CLAUDE:
-        llm = _create_claude(model, **kwargs)
+        llm = _create_claude(model, **options)
     elif provider == LlmProvider.GEMINI:
-        llm = _create_gemini(model, **kwargs)
+        llm = _create_gemini(model, **options)
     elif provider == LlmProvider.CODEX:
-        llm = _create_codex(model, **kwargs)
+        llm = _create_codex(model, **options)
     elif provider == LlmProvider.OLLAMA:
-        llm = _create_ollama(model, **kwargs)
+        llm = _create_ollama(model, **options)
     else:
         msg = f"Unsupported LLM provider: {provider}"
         raise ValueError(msg)
@@ -59,24 +58,13 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
     return llm.bind_tools(_get_tools())
 
 
-def _resolve_model(default_model: str, provider_config: LlmProviderConfig, task: LlmMode | None) -> str:
-    """Resolve the model name, applying task-specific overrides if set."""
+def _resolve_model(provider_config: LlmProviderConfig, task: LlmMode | None) -> tuple[str, dict[str, Any]]:
+    """Resolve model name and options, using mode-specific config if available."""
     if task:
         mode_config = provider_config.modes.get(task)
         if mode_config and mode_config.model:
-            return mode_config.model
-    return default_model
-
-
-def _merge_options(provider_config: LlmProviderConfig, task: LlmMode | None) -> dict[str, Any]:
-    """Merge provider-level options with mode-level overrides."""
-    merged = dict(provider_config.options)
-    if task:
-        mode_config = provider_config.modes.get(task)
-        if mode_config:
-            overrides = mode_config.options
-            merged.update(overrides.get("options", overrides))
-    return merged
+            return mode_config.model, dict(mode_config.options)
+    return provider_config.model, dict(provider_config.options)
 
 
 def _create_claude(model: str, **kwargs: Any) -> BaseChatModel:
