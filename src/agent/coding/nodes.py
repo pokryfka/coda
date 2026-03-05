@@ -297,10 +297,11 @@ async def fix_code(state: AgentState) -> dict:
 async def cleanup_branch(state: AgentState) -> dict:
     """Delete the working branch when no changes were made."""
     repo_path = state["repo_path"]
+    repo_config = state["repo_config"]
     branch = state["branch"]
 
     git = GitRepo(path=Path(repo_path))
-    await git.delete_branch(branch)
+    await git.delete_branch(branch, default_branch=repo_config.default_branch)
 
     logger.info("No changes made, deleted branch %s", branch)
     return {"status": Status.DONE}

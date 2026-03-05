@@ -223,11 +223,11 @@ class GitRepo:
         out = await self._run("git", "status", "--porcelain")
         return bool(out.strip())
 
-    async def delete_branch(self, name: str) -> None:
+    async def delete_branch(self, name: str, default_branch: str = "main") -> None:
         """Delete a local branch and switch back to default."""
         current = await self.get_current_branch()
         if current == name:
-            await self._run("git", "checkout", "main")
+            await self._run("git", "checkout", default_branch)
         await self._run("git", "branch", "-D", name)
 
     async def branch_exists(self, name: str) -> bool:
