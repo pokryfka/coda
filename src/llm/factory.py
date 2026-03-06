@@ -41,8 +41,12 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
 
     model, options = _resolve_model(provider_config, task)
 
-    logger.info("Creating LLM: provider=%s, model=%s, options=%s", provider, model, options)
-
+    logger.info(
+        "Creating LLM: provider=%s, model=%s, option_keys=%s",
+        provider,
+        model,
+        sorted(options.keys()),
+    )
     if provider == LlmProvider.CLAUDE:
         llm = _create_claude(model, **options)
     elif provider == LlmProvider.GEMINI:
