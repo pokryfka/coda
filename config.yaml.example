@@ -33,17 +33,10 @@ llm:
     readme: "GEMINI.md"
     options:
       temperature: 1.0
-    # Optional per-mode overrides
-    # plan:
-    #   model: "gemini-3.1-pro-preview"
-    #     options:
-    #  temperature: 1.0
-    # implement:
-    #   model: "gemini-3-flash-preview"
 
   codex:
     # Set OPENAI_API_KEY env var
-    model: "gpt-4o"
+    model: "gpt-5-nano"
     options:
       temperature: 1.0
 
