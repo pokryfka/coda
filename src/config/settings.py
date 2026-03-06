@@ -204,12 +204,7 @@ def _apply_env_overrides(config: AppConfig) -> AppConfig:
     if provider:
         config.llm.provider = LlmProvider(provider)
 
-    ollama_url = os.environ.get("OLLAMA_BASE_URL")
-    if ollama_url:
-        config.llm.providers[LlmProvider.OLLAMA].options["base_url"] = ollama_url
-
     return config
-
 
 def find_repo(config: AppConfig, name: str) -> RepoConfig | None:
     """Find a repository configuration by name."""

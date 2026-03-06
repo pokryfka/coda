@@ -9,19 +9,18 @@ llm:
 
   ollama:
     model: "qwen2.5-coder:14b"
-    options:
-      base_url: "http://ollama:11434"
 
   claude:
     # Set ANTHROPIC_API_KEY env var or pass via docker
     model: "claude-sonnet-4-6"
     readme: "CLAUDE.md"
     options:
-      temperature: 0
+      temperature: 1
     # Optional per-mode overrides (model + options)
     # plan:
     #   model: "claude-opus-4-6"
-    #   temperature: 1.0
+    #   options:
+    #     temperature: 1.0
     # implement:
     #   model: "claude-sonnet-4-6"
     # fix:
