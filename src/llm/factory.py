@@ -12,14 +12,6 @@ from src.config.settings import LlmConfig, LlmMode, LlmProvider, LlmProviderConf
 
 logger = logging.getLogger(__name__)
 
-
-def _get_tools() -> list:
-    """Import and return all coding agent tools."""
-    from src.agent.coding.tools import list_files, read_file, run_command, write_file
-
-    return [read_file, write_file, list_files, run_command]
-
-
 def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
     """Create an LLM client based on provider configuration.
 
@@ -28,7 +20,7 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
         task: Optional LlmMode for mode-specific model/options override.
 
     Returns:
-        A tool-bound Runnable wrapping the configured LLM client.
+        A configured BaseChatModel instance.
 
     Raises:
         ValueError: If the provider is not supported.
@@ -59,7 +51,7 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
         msg = f"Unsupported LLM provider: {provider}"
         raise ValueError(msg)
 
-    return llm.bind_tools(_get_tools())
+    return llm
 
 
 def _resolve_model(provider_config: LlmProviderConfig, task: LlmMode | None) -> tuple[str, dict[str, Any]]:

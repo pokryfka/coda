@@ -5,8 +5,8 @@ from __future__ import annotations
 import os
 
 import pytest
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.runnables import RunnableBinding
 
 from src.config.settings import LlmConfig, LlmMode, LlmModeConfig, LlmProvider, LlmProviderConfig
 from src.llm.factory import create_llm
@@ -23,7 +23,7 @@ class TestLlmFactory:
             pytest.skip("ANTHROPIC_API_KEY not set")
         config = LlmConfig(provider="claude")
         llm = create_llm(config)
-        assert isinstance(llm, RunnableBinding)
+        assert isinstance(llm, BaseChatModel)
 
     def test_create_gemini_client(self) -> None:
         """Factory creates a Gemini client when configured."""
@@ -31,7 +31,7 @@ class TestLlmFactory:
             pytest.skip("GEMINI_API_KEY not set")
         config = LlmConfig(provider="gemini")
         llm = create_llm(config)
-        assert isinstance(llm, RunnableBinding)
+        assert isinstance(llm, BaseChatModel)
 
     def test_create_openai_client(self) -> None:
         """Factory creates an OpenAI client when configured."""
@@ -39,7 +39,7 @@ class TestLlmFactory:
             pytest.skip("OPENAI_API_KEY not set")
         config = LlmConfig(provider="codex")
         llm = create_llm(config)
-        assert isinstance(llm, RunnableBinding)
+        assert isinstance(llm, BaseChatModel)
 
     def test_create_ollama_client(self) -> None:
         """Factory creates an Ollama client when configured."""
@@ -53,7 +53,7 @@ class TestLlmFactory:
             },
         )
         llm = create_llm(config)
-        assert isinstance(llm, RunnableBinding)
+        assert isinstance(llm, BaseChatModel)
 
     def test_invalid_provider_raises(self) -> None:
         """Factory raises ValueError for unsupported provider."""
@@ -74,7 +74,7 @@ class TestLlmFactory:
             },
         )
         llm = create_llm(config, task=LlmMode.PLAN)
-        assert llm.bound.model == "plan-model"
+        assert llm.model == "plan-model"
 
     def test_mode_options_override(self) -> None:
         """Factory uses mode-specific options when mode has its own model."""
@@ -92,7 +92,7 @@ class TestLlmFactory:
             },
         )
         llm = create_llm(config, task=LlmMode.PLAN)
-        assert llm.bound.temperature == 0.5
+        assert llm.temperature == 0.5
 
     def test_mode_options_only_without_model_are_ignored(self) -> None:
         """Mode with options but no model falls back to provider, ignoring mode options."""
@@ -108,7 +108,7 @@ class TestLlmFactory:
         )
         llm = create_llm(config, task=LlmMode.PLAN)
         # BUG: mode options are ignored because mode has no model set
-        assert llm.bound.temperature == 0  # would expect 0.7
+        assert llm.temperature == 0  # would expect 0.7
 
     def test_mode_with_model_drops_provider_options(self) -> None:
         """Mode with model loses provider-level options like base_url."""
@@ -127,7 +127,7 @@ class TestLlmFactory:
         )
         llm = create_llm(config, task=LlmMode.PLAN)
         # BUG: base_url from provider options is dropped
-        assert not hasattr(llm.bound, "base_url") or llm.bound.base_url != "http://localhost:11434"
+        assert not hasattr(llm, "base_url") or llm.base_url != "http://localhost:11434"
 
 
 class TestLlmInvoke:
