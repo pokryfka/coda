@@ -8,30 +8,37 @@ llm:
   readme: "AGENTS.md"  # Default readme for agent context
 
   ollama:
-    base_url: "http://ollama:11434"
     model: "qwen2.5-coder:14b"
 
   claude:
     # Set ANTHROPIC_API_KEY env var or pass via docker
     model: "claude-sonnet-4-6"
     readme: "CLAUDE.md"
-    # Optional per-task model overrides (fall back to `model` if not set)
-    # plan_model: "claude-opus-4-6"
-    # implement_model: "claude-sonnet-4-6"
-    # fix_model: "claude-sonnet-4-6"
+    options:
+      temperature: 1.0
+    # Optional per-mode overrides (model and/or options)
+    # plan:
+    #   model: "claude-opus-4-6"
+    #   options:
+    #     temperature: 1.0
+    # implement:
+    #   options:
+    #     temperature: 0.9
+    # fix:
+    #   model: "claude-sonnet-4-6"
 
   gemini:
     # Set GEMINI_API_KEY env var
     model: "gemini-3-flash-preview"
     readme: "GEMINI.md"
-    # Optional per-task model overrides (fall back to `model` if not set)
-    # plan_model: "gemini-3.1-pro-preview"
-    # implement_model: "gemini-3-flash-preview"
-    # fix_model: "gemini-3-flash-preview"
+    options:
+      temperature: 1.0
 
   codex:
     # Set OPENAI_API_KEY env var
-    model: "gpt-4o"
+    model: "gpt-5-nano"
+    options:
+      temperature: 1.0
 
 # Git / GitHub Configuration
 git:

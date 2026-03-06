@@ -44,6 +44,7 @@ class FixResponse:
 
 
 PLAN_SCHEMA: dict[str, Any] = {
+    "title": "Plan",
     "type": "object",
     "properties": {
         "plan": {"type": "string", "description": "Detailed implementation plan"},
@@ -58,6 +59,7 @@ PLAN_SCHEMA: dict[str, Any] = {
 }
 
 IMPLEMENT_SCHEMA: dict[str, Any] = {
+    "title": "Implement",
     "type": "object",
     "properties": {
         "changes": {
@@ -78,6 +80,7 @@ IMPLEMENT_SCHEMA: dict[str, Any] = {
 }
 
 FIX_SCHEMA: dict[str, Any] = {
+    "title": "Fix",
     "type": "object",
     "properties": {
         "changes": {

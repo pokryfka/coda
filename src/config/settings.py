@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import copy
 import os
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 import yaml
+
+
+@dataclass
+class LlmModeConfig:
+    """Per-mode model and options overrides."""
+
+    model: str = ""
+    options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -14,27 +25,45 @@ class LlmProviderConfig:
     """Configuration for a specific LLM provider."""
 
     model: str = ""
-    base_url: str = ""
     readme: str = ""
-    plan_model: str = ""
-    implement_model: str = ""
-    fix_model: str = ""
+    options: dict[str, Any] = field(default_factory=dict)
+    modes: dict[LlmMode, LlmModeConfig] = field(default_factory=dict)
+
+
+class LlmMode(StrEnum):
+    """LLM task modes."""
+
+    PLAN = "plan"
+    IMPLEMENT = "implement"
+    FIX = "fix"
+
+
+class LlmProvider(StrEnum):
+    """Supported LLM providers."""
+
+    CLAUDE = "claude"
+    GEMINI = "gemini"
+    CODEX = "codex"
+    OLLAMA = "ollama"
+
+
+DEFAULT_PROVIDERS: dict[LlmProvider, LlmProviderConfig] = {
+    LlmProvider.CLAUDE: LlmProviderConfig(model="claude-sonnet-4-6", readme="CLAUDE.md"),
+    LlmProvider.GEMINI: LlmProviderConfig(model="gemini-3-flash-preview", readme="GEMINI.md"),
+    LlmProvider.CODEX: LlmProviderConfig(model="gpt-4o"),
+    LlmProvider.OLLAMA: LlmProviderConfig(model="qwen2.5-coder:14b"),
+}
 
 
 @dataclass
 class LlmConfig:
     """Top-level LLM configuration."""
 
-    provider: str = "claude"
+    provider: LlmProvider = LlmProvider.CLAUDE
     readme: str = "AGENTS.md"
-    ollama: LlmProviderConfig = field(default_factory=lambda: LlmProviderConfig(model="qwen2.5-coder:14b"))
-    claude: LlmProviderConfig = field(
-        default_factory=lambda: LlmProviderConfig(model="claude-sonnet-4-6", readme="CLAUDE.md")
+    providers: dict[LlmProvider, LlmProviderConfig] = field(
+        default_factory=lambda: copy.deepcopy(DEFAULT_PROVIDERS)
     )
-    gemini: LlmProviderConfig = field(
-        default_factory=lambda: LlmProviderConfig(model="gemini-3-flash-preview", readme="GEMINI.md")
-    )
-    codex: LlmProviderConfig = field(default_factory=lambda: LlmProviderConfig(model="gpt-4o"))
 
 
 @dataclass
@@ -85,25 +114,33 @@ class AppConfig:
 
 def _build_provider_config(data: dict) -> LlmProviderConfig:
     """Build a provider config from a dictionary."""
+    modes: dict[LlmMode, LlmModeConfig] = {}
+    for mode in LlmMode:
+        if mode in data and isinstance(data[mode], dict):
+            mode_data = data[mode]
+            opts = dict(mode_data.get("options") or {})
+            opts.update({k: v for k, v in mode_data.items() if k not in ("model", "options")})
+            modes[mode] = LlmModeConfig(
+                model=mode_data.get("model", ""),
+                options=opts,
+            )
     return LlmProviderConfig(
         model=data.get("model", ""),
-        base_url=data.get("base_url", ""),
         readme=data.get("readme", ""),
-        plan_model=data.get("plan_model", ""),
-        implement_model=data.get("implement_model", ""),
-        fix_model=data.get("fix_model", ""),
+        options=data.get("options") or {},
+        modes=modes,
     )
 
 
 def _build_llm_config(data: dict) -> LlmConfig:
     """Build LLM config from a dictionary."""
     config = LlmConfig(
-        provider=data.get("provider", "claude"),
+        provider=LlmProvider(data.get("provider", "claude")),
         readme=data.get("readme", "AGENTS.md"),
     )
-    for provider_name in ("ollama", "claude", "gemini", "codex"):
-        if provider_name in data:
-            setattr(config, provider_name, _build_provider_config(data[provider_name]))
+    for provider in LlmProvider:
+        if provider in data:
+            config.providers[provider] = _build_provider_config(data[provider])
     return config
 
 
@@ -165,14 +202,9 @@ def _apply_env_overrides(config: AppConfig) -> AppConfig:
     """Apply environment variable overrides to config."""
     provider = os.environ.get("LLM_PROVIDER")
     if provider:
-        config.llm.provider = provider
-
-    ollama_url = os.environ.get("OLLAMA_BASE_URL")
-    if ollama_url:
-        config.llm.ollama.base_url = ollama_url
+        config.llm.provider = LlmProvider(provider)
 
     return config
-
 
 def find_repo(config: AppConfig, name: str) -> RepoConfig | None:
     """Find a repository configuration by name."""
