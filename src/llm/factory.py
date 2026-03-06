@@ -24,11 +24,11 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
     """Create an LLM client based on provider configuration.
 
     Args:
-        config: LLM configuration.
-        task: Optional LLM mode for model override.
+        config: LlmConfig with provider and model settings.
+        task: Optional LlmMode for mode-specific model/options override.
 
     Returns:
-        A configured BaseChatModel instance.
+        A tool-bound Runnable wrapping the configured LLM client.
 
     Raises:
         ValueError: If the provider is not supported.
