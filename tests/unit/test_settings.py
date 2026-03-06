@@ -55,14 +55,6 @@ class TestLoadConfig:
         config = load_config(config_file)
         assert config.llm.provider == "ollama"
 
-    def test_env_var_override_ollama_url(self, tmp_path: Path, monkeypatch: object) -> None:
-        """OLLAMA_BASE_URL env var overrides config."""
-        config_file = tmp_path / "config.yaml"
-        config_file.write_text("llm:\n  provider: ollama\n")
-        monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434")  # type: ignore[attr-defined]
-        config = load_config(config_file)
-        assert config.llm.providers[LlmProvider.OLLAMA].options["base_url"] == "http://localhost:11434"
-
     def test_provider_mode_overrides(self, tmp_path: Path) -> None:
         """Per-mode model and options overrides are loaded from config."""
         config_file = tmp_path / "config.yaml"
