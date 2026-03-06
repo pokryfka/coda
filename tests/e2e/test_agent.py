@@ -8,7 +8,15 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from src.agent.coding.loop import run_agent
-from src.config.settings import AgentConfig, AppConfig, GitConfig, LlmConfig, LlmProvider, LlmProviderConfig, RepoConfig  # noqa: E501
+from src.config.settings import (  # noqa: E501
+    AgentConfig,
+    AppConfig,
+    GitConfig,
+    LlmConfig,
+    LlmProvider,
+    LlmProviderConfig,
+    RepoConfig,
+)
 
 
 @pytest.fixture
