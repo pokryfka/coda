@@ -5,10 +5,13 @@ from __future__ import annotations
 import os
 
 import pytest
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableBinding
 
 from src.config.settings import LlmConfig, LlmMode, LlmModeConfig, LlmProvider, LlmProviderConfig
 from src.llm.factory import create_llm
+
+SIMPLE_PROMPT = [HumanMessage(content="Reply with exactly one word: hello")]
 
 
 class TestLlmFactory:
@@ -125,3 +128,55 @@ class TestLlmFactory:
         llm = create_llm(config, task=LlmMode.PLAN)
         # BUG: base_url from provider options is dropped
         assert not hasattr(llm.bound, "base_url") or llm.bound.base_url != "http://localhost:11434"
+
+
+class TestLlmInvoke:
+    """Tests for invoking LLM clients with a simple prompt."""
+
+    def test_invoke_claude(self) -> None:
+        """Claude client responds with a valid AIMessage."""
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            pytest.skip("ANTHROPIC_API_KEY not set")
+        config = LlmConfig(provider="claude")
+        llm = create_llm(config)
+        response = llm.invoke(SIMPLE_PROMPT)
+        assert isinstance(response, AIMessage)
+        assert len(response.content) > 0
+
+    def test_invoke_gemini(self) -> None:
+        """Gemini client responds with a valid AIMessage."""
+        if not os.environ.get("GEMINI_API_KEY"):
+            pytest.skip("GEMINI_API_KEY not set")
+        config = LlmConfig(provider="gemini")
+        llm = create_llm(config)
+        response = llm.invoke(SIMPLE_PROMPT)
+        assert isinstance(response, AIMessage)
+        assert len(response.content) > 0
+
+    def test_invoke_codex(self) -> None:
+        """OpenAI client responds with a valid AIMessage."""
+        if not os.environ.get("OPENAI_API_KEY"):
+            pytest.skip("OPENAI_API_KEY not set")
+        config = LlmConfig(provider="codex")
+        llm = create_llm(config)
+        response = llm.invoke(SIMPLE_PROMPT)
+        assert isinstance(response, AIMessage)
+        assert len(response.content) > 0
+
+    def test_invoke_ollama(self) -> None:
+        """Ollama client responds with a valid AIMessage."""
+        if not os.environ.get("OLLAMA_BASE_URL"):
+            pytest.skip("OLLAMA_BASE_URL not set")
+        config = LlmConfig(
+            provider="ollama",
+            providers={
+                LlmProvider.OLLAMA: LlmProviderConfig(
+                    model="qwen2.5-coder:14b",
+                    options={"base_url": os.environ["OLLAMA_BASE_URL"]},
+                ),
+            },
+        )
+        llm = create_llm(config)
+        response = llm.invoke(SIMPLE_PROMPT)
+        assert isinstance(response, AIMessage)
+        assert len(response.content) > 0
