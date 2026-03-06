@@ -9,36 +9,36 @@ from src.llm.factory import _resolve_model
 class TestResolveModel:
     """Tests for _resolve_model fallback behavior."""
 
-    def test_no_task_returns_provider_defaults(self) -> None:
+    def test_no_mode_returns_provider_defaults(self) -> None:
         pc = LlmProviderConfig(model="default-model", options={"temperature": 0})
-        model, options = _resolve_model(pc, task=None)
+        model, options = _resolve_model(pc, mode=None)
         assert model == "default-model"
         assert options == {"temperature": 0}
 
-    def test_task_with_model_override(self) -> None:
+    def test_mode_with_model_override(self) -> None:
         pc = LlmProviderConfig(
             model="default-model",
             options={"temperature": 0},
             modes={LlmMode.PLAN: LlmModeConfig(model="plan-model", options={"temperature": 0.5})},
         )
-        model, options = _resolve_model(pc, task=LlmMode.PLAN)
+        model, options = _resolve_model(pc, mode=LlmMode.PLAN)
         assert model == "plan-model"
         assert options == {"temperature": 0.5}
 
-    def test_task_with_options_only_inherits_provider_model(self) -> None:
+    def test_mode_with_options_only_inherits_provider_model(self) -> None:
         """Mode with options but no model should inherit provider model."""
         pc = LlmProviderConfig(
             model="default-model",
             options={"temperature": 0},
             modes={LlmMode.PLAN: LlmModeConfig(options={"temperature": 0.7})},
         )
-        model, options = _resolve_model(pc, task=LlmMode.PLAN)
+        model, options = _resolve_model(pc, mode=LlmMode.PLAN)
         assert model == "default-model"
         assert options == {"temperature": 0.7}
 
-    def test_task_without_mode_config_returns_provider(self) -> None:
+    def test_undefined_mode_returns_provider(self) -> None:
         pc = LlmProviderConfig(model="default-model", options={"temperature": 0})
-        model, options = _resolve_model(pc, task=LlmMode.FIX)
+        model, options = _resolve_model(pc, mode=LlmMode.FIX)
         assert model == "default-model"
         assert options == {"temperature": 0}
 
@@ -49,6 +49,6 @@ class TestResolveModel:
             options={"temperature": 0, "base_url": "http://localhost"},
             modes={LlmMode.PLAN: LlmModeConfig(model="plan-model")},
         )
-        model, options = _resolve_model(pc, task=LlmMode.PLAN)
+        model, options = _resolve_model(pc, mode=LlmMode.PLAN)
         assert model == "plan-model"
         assert options == {"temperature": 0, "base_url": "http://localhost"}

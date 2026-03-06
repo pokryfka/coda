@@ -70,8 +70,8 @@ class TestLlmFactory:
         with pytest.raises(ValueError, match="Unsupported"):
             create_llm(config)
 
-    def test_task_model_override(self) -> None:
-        """Factory uses task-specific model when set."""
+    def test_mode_model_override(self) -> None:
+        """Factory uses mode-specific model when set."""
         base_url = _ollama_base_url()
         config = LlmConfig(
             provider="ollama",
@@ -83,7 +83,7 @@ class TestLlmFactory:
                 ),
             },
         )
-        llm = create_llm(config, task=LlmMode.PLAN)
+        llm = create_llm(config, mode=LlmMode.PLAN)
         assert llm.model == "plan-model"
 
     def test_mode_options_override(self) -> None:
@@ -102,7 +102,7 @@ class TestLlmFactory:
                 ),
             },
         )
-        llm = create_llm(config, task=LlmMode.PLAN)
+        llm = create_llm(config, mode=LlmMode.PLAN)
         assert llm.temperature == 0.5
 
     def test_mode_options_only_without_model(self) -> None:
@@ -118,7 +118,7 @@ class TestLlmFactory:
                 ),
             },
         )
-        llm = create_llm(config, task=LlmMode.PLAN)
+        llm = create_llm(config, mode=LlmMode.PLAN)
         assert llm.model == "default-model"
         assert llm.temperature == 0.7
 
@@ -138,7 +138,7 @@ class TestLlmFactory:
                 ),
             },
         )
-        llm = create_llm(config, task=LlmMode.PLAN)
+        llm = create_llm(config, mode=LlmMode.PLAN)
         # BUG: base_url from provider options is dropped
         assert not hasattr(llm, "base_url") or llm.base_url != base_url
 

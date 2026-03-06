@@ -12,12 +12,12 @@ from src.config.settings import LlmConfig, LlmMode, LlmProvider, LlmProviderConf
 
 logger = logging.getLogger(__name__)
 
-def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
+def create_llm(config: LlmConfig, mode: LlmMode | None = None) -> Runnable:
     """Create an LLM client based on provider configuration.
 
     Args:
         config: LlmConfig with provider and model settings.
-        task: Optional LlmMode for mode-specific model/options override.
+        mode: Optional LlmMode for mode-specific model/options override.
 
     Returns:
         A configured BaseChatModel instance.
@@ -31,7 +31,7 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
         msg = f"Unsupported LLM provider: {provider}"
         raise ValueError(msg)
 
-    model, options = _resolve_model(provider_config, task)
+    model, options = _resolve_model(provider_config, mode)
 
     logger.info(
         "Creating LLM: provider=%s, model=%s, option_keys=%s",
@@ -54,10 +54,10 @@ def create_llm(config: LlmConfig, task: LlmMode | None = None) -> Runnable:
     return llm
 
 
-def _resolve_model(provider_config: LlmProviderConfig, task: LlmMode | None) -> tuple[str, dict[str, Any]]:
+def _resolve_model(provider_config: LlmProviderConfig, mode: LlmMode | None) -> tuple[str, dict[str, Any]]:
     """Resolve model name and options, using mode-specific config if available."""
-    if task:
-        mode_config = provider_config.modes.get(task)
+    if mode:
+        mode_config = provider_config.modes.get(mode)
         if mode_config:
             model = mode_config.model or provider_config.model
             options = dict(mode_config.options) if mode_config.options else dict(provider_config.options)
