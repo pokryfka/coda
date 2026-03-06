@@ -112,6 +112,55 @@ class TestLoadConfig:
         assert claude.options == {}
         assert claude.modes == {}
 
+    def test_mode_options_without_model_override(self, tmp_path: Path) -> None:
+        """Mode with options but no model should inherit provider model."""
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(textwrap.dedent("""\
+            llm:
+              provider: claude
+              claude:
+                model: claude-sonnet-4-6
+                options:
+                  temperature: 0
+                plan:
+                  temperature: 0.5
+        """))
+        config = load_config(config_file)
+        claude = config.llm.providers[LlmProvider.CLAUDE]
+        # Mode should have options but no model override
+        assert claude.modes[LlmMode.PLAN].model == ""
+        assert claude.modes[LlmMode.PLAN].options == {"temperature": 0.5}
+
+    def test_mode_with_model_only_inherits_provider_options(self, tmp_path: Path) -> None:
+        """Mode with model but no options should inherit provider-level options."""
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(textwrap.dedent("""\
+            llm:
+              provider: claude
+              claude:
+                model: claude-sonnet-4-6
+                options:
+                  temperature: 1.0
+                plan:
+                  model: claude-opus-4-6
+                implement:
+                  options:
+                    temperature: 0.9
+                fix:
+                  model: claude-sonnet-4-6
+        """))
+        config = load_config(config_file)
+        claude = config.llm.providers[LlmProvider.CLAUDE]
+        # fix has model override but no options -> should inherit provider options
+        assert claude.modes[LlmMode.FIX].model == "claude-sonnet-4-6"
+        assert claude.modes[LlmMode.FIX].options == {}
+        # plan has model override but no options -> same
+        assert claude.modes[LlmMode.PLAN].model == "claude-opus-4-6"
+        assert claude.modes[LlmMode.PLAN].options == {}
+        # implement has options but no model
+        assert claude.modes[LlmMode.IMPLEMENT].model == ""
+        assert claude.modes[LlmMode.IMPLEMENT].options == {"temperature": 0.9}
+
     def test_mode_options_not_merged_with_provider(self, tmp_path: Path) -> None:
         """Mode-specific options should not be merged with provider-level options."""
         config_file = tmp_path / "config.yaml"

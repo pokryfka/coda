@@ -58,8 +58,10 @@ def _resolve_model(provider_config: LlmProviderConfig, task: LlmMode | None) -> 
     """Resolve model name and options, using mode-specific config if available."""
     if task:
         mode_config = provider_config.modes.get(task)
-        if mode_config and mode_config.model:
-            return mode_config.model, dict(mode_config.options)
+        if mode_config:
+            model = mode_config.model or provider_config.model
+            options = dict(mode_config.options) if mode_config.options else dict(provider_config.options)
+            return model, options
     return provider_config.model, dict(provider_config.options)
 
 

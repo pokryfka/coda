@@ -15,14 +15,15 @@ llm:
     model: "claude-sonnet-4-6"
     readme: "CLAUDE.md"
     options:
-      temperature: 1
-    # Optional per-mode overrides (model + options)
+      temperature: 1.0
+    # Optional per-mode overrides (model and/or options)
     # plan:
     #   model: "claude-opus-4-6"
     #   options:
     #     temperature: 1.0
     # implement:
-    #   model: "claude-sonnet-4-6"
+    #   options:
+    #     temperature: 0.9
     # fix:
     #   model: "claude-sonnet-4-6"
 
@@ -35,6 +36,8 @@ llm:
     # Optional per-mode overrides
     # plan:
     #   model: "gemini-3.1-pro-preview"
+    #     options:
+    #  temperature: 1.0
     # implement:
     #   model: "gemini-3-flash-preview"
 
