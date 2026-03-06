@@ -74,14 +74,17 @@ class TestLlmFactory:
         assert llm.bound.model == "plan-model"
 
     def test_mode_options_override(self) -> None:
-        """Factory merges mode-level options over provider-level options."""
+        """Factory uses mode-specific options when mode has its own model."""
         config = LlmConfig(
             provider="ollama",
             providers={
                 LlmProvider.OLLAMA: LlmProviderConfig(
                     model="test-model",
                     options={"base_url": "http://localhost:11434", "temperature": 0},
-                    modes={LlmMode.PLAN: LlmModeConfig(options={"temperature": 0.5})},
+                    modes={LlmMode.PLAN: LlmModeConfig(
+                        model="plan-model",
+                        options={"base_url": "http://localhost:11434", "temperature": 0.5},
+                    )},
                 ),
             },
         )

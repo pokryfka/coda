@@ -105,6 +105,21 @@ class TestLoadConfig:
         assert ollama.options["temperature"] == 0.5
 
 
+    def test_provider_model_only(self, tmp_path: Path) -> None:
+        """Provider config with only model set has empty options and no modes."""
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(textwrap.dedent("""\
+            llm:
+              provider: claude
+              claude:
+                model: "claude-sonnet-4-6"
+        """))
+        config = load_config(config_file)
+        claude = config.llm.providers[LlmProvider.CLAUDE]
+        assert claude.model == "claude-sonnet-4-6"
+        assert claude.options == {}
+        assert claude.modes == {}
+
     def test_mode_options_not_merged_with_provider(self, tmp_path: Path) -> None:
         """Mode-specific options should not be merged with provider-level options."""
         config_file = tmp_path / "config.yaml"
