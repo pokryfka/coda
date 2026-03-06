@@ -90,3 +90,38 @@ class TestLlmFactory:
         )
         llm = create_llm(config, task=LlmMode.PLAN)
         assert llm.bound.temperature == 0.5
+
+    def test_mode_options_only_without_model_are_ignored(self) -> None:
+        """Mode with options but no model falls back to provider, ignoring mode options."""
+        config = LlmConfig(
+            provider="ollama",
+            providers={
+                LlmProvider.OLLAMA: LlmProviderConfig(
+                    model="default-model",
+                    options={"base_url": "http://localhost:11434", "temperature": 0},
+                    modes={LlmMode.PLAN: LlmModeConfig(options={"temperature": 0.7})},
+                ),
+            },
+        )
+        llm = create_llm(config, task=LlmMode.PLAN)
+        # BUG: mode options are ignored because mode has no model set
+        assert llm.bound.temperature == 0  # would expect 0.7
+
+    def test_mode_with_model_drops_provider_options(self) -> None:
+        """Mode with model loses provider-level options like base_url."""
+        config = LlmConfig(
+            provider="ollama",
+            providers={
+                LlmProvider.OLLAMA: LlmProviderConfig(
+                    model="default-model",
+                    options={"base_url": "http://localhost:11434", "temperature": 0},
+                    modes={LlmMode.PLAN: LlmModeConfig(
+                        model="plan-model",
+                        options={"temperature": 0.5},
+                    )},
+                ),
+            },
+        )
+        llm = create_llm(config, task=LlmMode.PLAN)
+        # BUG: base_url from provider options is dropped
+        assert not hasattr(llm.bound, "base_url") or llm.bound.base_url != "http://localhost:11434"
