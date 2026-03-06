@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -62,7 +63,7 @@ class LlmConfig:
     provider: LlmProvider = LlmProvider.CLAUDE
     readme: str = "AGENTS.md"
     providers: dict[LlmProvider, LlmProviderConfig] = field(
-        default_factory=lambda: dict(DEFAULT_PROVIDERS)
+        default_factory=lambda: copy.deepcopy(DEFAULT_PROVIDERS)
     )
 
 
