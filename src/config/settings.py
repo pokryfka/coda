@@ -118,7 +118,7 @@ def _build_provider_config(data: dict) -> LlmProviderConfig:
     for mode in LlmMode:
         if mode in data and isinstance(data[mode], dict):
             mode_data = data[mode]
-            opts = dict(mode_data.get("options", {}))
+            opts = dict(mode_data.get("options") or {})
             opts.update({k: v for k, v in mode_data.items() if k not in ("model", "options")})
             modes[mode] = LlmModeConfig(
                 model=mode_data.get("model", ""),
@@ -127,7 +127,7 @@ def _build_provider_config(data: dict) -> LlmProviderConfig:
     return LlmProviderConfig(
         model=data.get("model", ""),
         readme=data.get("readme", ""),
-        options=data.get("options", {}),
+        options=data.get("options") or {},
         modes=modes,
     )
 
