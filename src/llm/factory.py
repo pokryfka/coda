@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable
 
 from src.config.settings import LlmConfig, LlmMode, LlmProvider, LlmProviderConfig
+
+logger = logging.getLogger(__name__)
 
 
 def _get_tools() -> list:
