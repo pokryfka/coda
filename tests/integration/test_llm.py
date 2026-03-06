@@ -14,6 +14,14 @@ from src.llm.factory import create_llm
 SIMPLE_PROMPT = [HumanMessage(content="Reply with exactly one word: hello")]
 
 
+def _ollama_base_url() -> str:
+    """Return OLLAMA_BASE_URL or skip the test."""
+    url = os.environ.get("OLLAMA_BASE_URL")
+    if not url:
+        pytest.skip("OLLAMA_BASE_URL not set")
+    return url
+
+
 class TestLlmFactory:
     """Tests for LLM factory creation."""
 
@@ -43,12 +51,13 @@ class TestLlmFactory:
 
     def test_create_ollama_client(self) -> None:
         """Factory creates an Ollama client when configured."""
+        base_url = _ollama_base_url()
         config = LlmConfig(
             provider="ollama",
             providers={
                 LlmProvider.OLLAMA: LlmProviderConfig(
                     model="qwen2.5-coder:14b",
-                    options={"base_url": "http://localhost:11434"},
+                    options={"base_url": base_url},
                 ),
             },
         )
@@ -63,12 +72,13 @@ class TestLlmFactory:
 
     def test_task_model_override(self) -> None:
         """Factory uses task-specific model when set."""
+        base_url = _ollama_base_url()
         config = LlmConfig(
             provider="ollama",
             providers={
                 LlmProvider.OLLAMA: LlmProviderConfig(
                     model="default-model",
-                    options={"base_url": "http://localhost:11434"},
+                    options={"base_url": base_url},
                     modes={LlmMode.PLAN: LlmModeConfig(model="plan-model")},
                 ),
             },
@@ -78,15 +88,16 @@ class TestLlmFactory:
 
     def test_mode_options_override(self) -> None:
         """Factory uses mode-specific options when mode has its own model."""
+        base_url = _ollama_base_url()
         config = LlmConfig(
             provider="ollama",
             providers={
                 LlmProvider.OLLAMA: LlmProviderConfig(
                     model="test-model",
-                    options={"base_url": "http://localhost:11434", "temperature": 0},
+                    options={"base_url": base_url, "temperature": 0},
                     modes={LlmMode.PLAN: LlmModeConfig(
                         model="plan-model",
-                        options={"base_url": "http://localhost:11434", "temperature": 0.5},
+                        options={"base_url": base_url, "temperature": 0.5},
                     )},
                 ),
             },
@@ -96,12 +107,13 @@ class TestLlmFactory:
 
     def test_mode_options_only_without_model_are_ignored(self) -> None:
         """Mode with options but no model falls back to provider, ignoring mode options."""
+        base_url = _ollama_base_url()
         config = LlmConfig(
             provider="ollama",
             providers={
                 LlmProvider.OLLAMA: LlmProviderConfig(
                     model="default-model",
-                    options={"base_url": "http://localhost:11434", "temperature": 0},
+                    options={"base_url": base_url, "temperature": 0},
                     modes={LlmMode.PLAN: LlmModeConfig(options={"temperature": 0.7})},
                 ),
             },
@@ -112,12 +124,13 @@ class TestLlmFactory:
 
     def test_mode_with_model_drops_provider_options(self) -> None:
         """Mode with model loses provider-level options like base_url."""
+        base_url = _ollama_base_url()
         config = LlmConfig(
             provider="ollama",
             providers={
                 LlmProvider.OLLAMA: LlmProviderConfig(
                     model="default-model",
-                    options={"base_url": "http://localhost:11434", "temperature": 0},
+                    options={"base_url": base_url, "temperature": 0},
                     modes={LlmMode.PLAN: LlmModeConfig(
                         model="plan-model",
                         options={"temperature": 0.5},
@@ -127,7 +140,7 @@ class TestLlmFactory:
         )
         llm = create_llm(config, task=LlmMode.PLAN)
         # BUG: base_url from provider options is dropped
-        assert not hasattr(llm, "base_url") or llm.base_url != "http://localhost:11434"
+        assert not hasattr(llm, "base_url") or llm.base_url != base_url
 
 
 class TestLlmInvoke:
@@ -165,14 +178,13 @@ class TestLlmInvoke:
 
     def test_invoke_ollama(self) -> None:
         """Ollama client responds with a valid AIMessage."""
-        if not os.environ.get("OLLAMA_BASE_URL"):
-            pytest.skip("OLLAMA_BASE_URL not set")
+        base_url = _ollama_base_url()
         config = LlmConfig(
             provider="ollama",
             providers={
                 LlmProvider.OLLAMA: LlmProviderConfig(
                     model="qwen2.5-coder:14b",
-                    options={"base_url": os.environ["OLLAMA_BASE_URL"]},
+                    options={"base_url": base_url},
                 ),
             },
         )
